@@ -26,6 +26,7 @@ export function Landing() {
           <span>Go-to-market strategy</span>
           <span>Launch execution</span>
         </div>
+        <p className="landing-credit">An Elijah Burgess project</p>
       </div>
     </div>
   );
