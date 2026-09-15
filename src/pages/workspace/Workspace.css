@@ -1,0 +1,49 @@
+.workspace{ min-height:100vh; }
+.workspace-topbar{
+  background:var(--surface); border-bottom:1px solid var(--border); padding:1rem 1.75rem;
+  display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10;
+}
+.topbar-left{ display:flex; align-items:center; gap:0.9rem; }
+.topbar-right{ display:flex; align-items:center; gap:0.6rem; position:relative; }
+.workspace-brand{ font-family:var(--font-sans); font-weight:800; font-size:1.3rem; letter-spacing:-0.01em; }
+.workspace-biz{
+  font-size:0.8rem; color:var(--ink-soft); font-weight:600; background:var(--bg);
+  border:1px solid var(--border); padding:0.3rem 0.7rem; border-radius:var(--r-sm);
+}
+.status-pill{
+  font-size:0.78rem; font-weight:700; padding:0.3rem 0.7rem; border-radius:var(--r-sm);
+  color:var(--good); background:var(--good-bg); display:inline-flex; align-items:center; gap:0.35rem;
+}
+
+.export-dropdown{ position:relative; }
+.export-dropdown-menu{
+  position:absolute; top:calc(100% + 6px); right:0; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-sm); box-shadow:var(--shadow-elevated); display:flex; flex-direction:column;
+  min-width:200px; overflow:hidden; z-index:20;
+}
+.export-dropdown-menu button{
+  background:none; border:none; text-align:left; padding:0.7rem 0.9rem; font-size:0.85rem; font-weight:600;
+  color:var(--ink); cursor:pointer; transition:background 150ms ease;
+}
+.export-dropdown-menu button:hover{ background:var(--bg); }
+
+.workspace-tabbar{
+  background:var(--surface); border-bottom:1px solid var(--border); padding:0 1.75rem;
+  display:flex; gap:0.2rem; overflow-x:auto; position:sticky; top:57px; z-index:9;
+}
+.workspace-tab{
+  display:flex; align-items:center; gap:0.5rem; background:none; border:none; color:var(--ink-soft);
+  font-size:0.86rem; font-weight:600; padding:0.85rem 0.9rem; cursor:pointer; white-space:nowrap;
+  border-bottom:2.5px solid transparent; margin-bottom:-1px; transition:color 150ms ease;
+}
+.workspace-tab:hover{ color:var(--ink); }
+.workspace-tab.active{ color:var(--ink); border-bottom-color:var(--accent); }
+
+.workspace-main{ padding:2.2rem 2rem 5rem; min-width:0; max-width:1100px; margin:0 auto; }
+.workspace-main-head{ margin-bottom:1.6rem; }
+.workspace-main-head h1{ font-family:var(--font-sans); font-weight:800; font-size:1.5rem; margin:0; letter-spacing:-0.01em; }
+
+@media print{
+  .workspace-tabbar, .workspace-topbar{ display:none !important; }
+  .workspace-main{ padding:0; max-width:none; }
+}
