@@ -177,6 +177,8 @@ table.matrix th{ font-size:0.68rem; font-weight:700; letter-spacing:0.04em; text
 .sales-motion{ display:grid; grid-template-columns:1fr 1fr; gap:1px; padding:1px; background:#cbded4; border-radius:20px; overflow:hidden; }
 .sales-step{ position:relative; min-width:0; display:grid; grid-template-columns:48px 1fr; gap:1rem; align-items:start; padding:1.35rem 1.5rem 1.55rem; background:#f2f8f4; }
 .sales-step-number{ color:#648276; font-size:.67rem; font-weight:850; letter-spacing:.12em; padding-top:.12rem; }
+.sales-step-copy{ display:grid; gap:.7rem; min-width:0; }
+.sales-step .sales-step-label{ margin:0; }
 .sales-step strong{ display:block; color:#183d31; font-size:clamp(.92rem,1.35vw,1.08rem); line-height:1.45; overflow-wrap:anywhere; }
 .sales-step i{ position:absolute; left:50%; bottom:-.7rem; z-index:2; width:1.4rem; height:1.4rem; display:grid; place-items:center; border-radius:50%; background:#0b4736; color:#c7f34a; font-size:.72rem; font-style:normal; transform:translateX(-50%); }
 .sales-step-3{ grid-column:1/-1; padding:clamp(1.5rem,3vw,2.4rem); background:#0b4736; }

@@ -21,11 +21,12 @@ export function buildVisualBrief(type: VisualType, analysis: PMMAnalysis): Visua
       primaryKpi: analysis.launch.primaryKPI,
     },
     sales: {
-      target: analysis.icp.primary.name,
-      pain: analysis.icp.primary.painPoints[0],
-      value: analysis.positioning.valueProposition,
-      objections: analysis.sales.objections.slice(0, 3),
-      cta: analysis.sales.pitch,
+      target: analysis.sales.motion.target,
+      openingQuestion: analysis.sales.motion.openingQuestion,
+      value: analysis.sales.motion.value,
+      reasonToBelieve: analysis.sales.motion.reasonToBelieve,
+      objections: analysis.sales.objections.slice(0, 3).map(({ objection, response }) => ({ objection, response })),
+      cta: analysis.sales.motion.callToAction,
     },
     marketing: {
       company: analysis.company.name,

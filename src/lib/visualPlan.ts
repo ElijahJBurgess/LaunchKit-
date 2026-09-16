@@ -29,7 +29,7 @@ export function buildVisualPlan(analysis: PMMAnalysis): VisualPlan {
   const ranges = ['Days 0–30', 'Days 31–60', 'Days 61–90'];
   const labels = ['Foundation', 'Launch', 'Learn + Grow'];
   return {
-    headline: concise(analysis.positioning.valueProposition || analysis.positioning.statement, 150),
+    headline: analysis.positioning.headline.trim(),
     blueprint: {
       audience: concise(analysis.icp.primary.name, 90),
       problem: concise(analysis.icp.primary.painPoints[0] || analysis.icp.primary.who, 150),

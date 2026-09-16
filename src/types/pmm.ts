@@ -30,6 +30,19 @@ export interface LaunchPhase {
   kpi: string;
 }
 
+export interface SalesMotion {
+  target: string;
+  openingQuestion: string;
+  value: string;
+  reasonToBelieve: string;
+  callToAction: string;
+}
+
+export interface SalesObjection {
+  objection: string;
+  response: string;
+}
+
 export interface PMMAnalysis {
   company: {
     name: string;
@@ -59,6 +72,7 @@ export interface PMMAnalysis {
   };
 
   positioning: {
+    headline: string;
     statement: string;
     valueProposition: string;
     elevatorPitch: string;
@@ -105,11 +119,11 @@ export interface PMMAnalysis {
   };
 
   sales: {
+    motion: SalesMotion;
+    discoveryQuestions: string[];
+    objections: SalesObjection[];
     onePager: string;
     battlecard: string;
-    objections: string[];
-    objectionHandling: string[];
-    discoveryQuestions: string[];
     pitch: string;
   };
 }

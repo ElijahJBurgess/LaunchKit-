@@ -1,7 +1,7 @@
 import type { BusinessInput } from '../types/business';
 import type { PMMAnalysis } from '../types/pmm';
 import { generateMockAnalysis } from '../data/mockPMMAnalysis';
-import { isAnalysisPayload } from '../../shared/pmmSchema.js';
+import { validateAnalysisPayload } from '../../shared/pmmSchema.js';
 
 const USE_MOCK_AI = import.meta.env.VITE_USE_MOCK_AI !== 'false';
 
@@ -22,7 +22,7 @@ async function requestAnalysis(input: BusinessInput, section?: keyof PMMAnalysis
   }
   const data = await response.json().catch(() => { throw new Error('The generation server returned an invalid response. Check that the backend is running.'); });
   if (!response.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Could not generate your strategy. Please try again.');
-  if (!isAnalysisPayload(data, section)) throw new Error('The generation server returned incomplete strategy data. Please try again.');
+  if (!validateAnalysisPayload(data, input, section)) throw new Error('The generation server returned incomplete or low-quality strategy data. Please try again.');
   return data;
 }
 

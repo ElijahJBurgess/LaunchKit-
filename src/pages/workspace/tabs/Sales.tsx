@@ -7,11 +7,11 @@ export function Sales() {
   if (!analysis) return null;
   const { sales } = analysis;
   const motion = [
-    ['Target', analysis.icp.primary.name],
-    ['Opening question', sales.discoveryQuestions[0]],
-    ['Value', analysis.positioning.valueProposition],
-    ['Reason to believe', analysis.positioning.differentiation[0]],
-    ['Call to action', sales.pitch],
+    ['Target', sales.motion.target],
+    ['Opening question', sales.motion.openingQuestion],
+    ['Value', sales.motion.value],
+    ['Reason to believe', sales.motion.reasonToBelieve],
+    ['Call to action', sales.motion.callToAction],
   ];
 
   return (
@@ -29,7 +29,10 @@ export function Sales() {
         {motion.map(([label, text], index) => (
           <article className={`sales-step sales-step-${index + 1}`} key={label}>
             <div className="sales-step-number">0{index + 1}</div>
-            <div><span>{label}</span><strong>{text}</strong></div>
+            <div className="sales-step-copy">
+              <span className="sales-step-label">{label}</span>
+              <strong className="sales-step-value">{text}</strong>
+            </div>
             {index < motion.length - 1 && <i aria-hidden="true">↓</i>}
           </article>
         ))}
@@ -52,10 +55,10 @@ export function Sales() {
           <article className="sales-guide-panel sales-objection-panel">
             <h3>Objections and responses</h3>
             <div className="sales-objection-list">
-              {sales.objections.map((objection, index) => (
+              {sales.objections.map(({ objection, response }, index) => (
                 <details key={objection} open={index === 0}>
                   <summary>{objection}</summary>
-                  <p>{sales.objectionHandling[index]}</p>
+                  <p>{response}</p>
                 </details>
               ))}
             </div>

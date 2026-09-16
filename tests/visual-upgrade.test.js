@@ -64,6 +64,8 @@ test('visual plan maps the real strategy into blueprint, actions, roadmap, and m
   const vite = await createServer(viteConfig);
   const { buildVisualPlan } = await vite.ssrLoadModule('/src/lib/visualPlan.ts');
   const plan = buildVisualPlan(analysis);
+  assert.equal(plan.headline, analysis.positioning.headline);
+  assert.doesNotMatch(plan.headline, /…|\.\.\./);
   assert.equal(plan.blueprint.audience, analysis.icp.primary.name);
   assert.equal(plan.blueprint.problem, analysis.icp.primary.painPoints[0]);
   assert.ok(analysis.positioning.statement.startsWith(plan.blueprint.positioning.slice(0, -1)));
@@ -76,6 +78,21 @@ test('visual plan maps the real strategy into blueprint, actions, roadmap, and m
   assert.equal(plan.metrics.primary, analysis.launch.primaryKPI);
   assert.deepEqual(plan.metrics.watch, analysis.launch.secondaryKPIs.slice(0, 3));
   await vite.close();
+});
+
+test('sales visual brief uses the explicit motion and paired objections', async () => {
+  const analysis = await loadFixture();
+  analysis.sales.pitch = 'Pitch marker that must not become the CTA.';
+  const vite = await createServer(viteConfig);
+  try {
+    const { buildVisualBrief } = await vite.ssrLoadModule('/src/services/visualService.ts');
+    const brief = buildVisualBrief('sales', analysis);
+    assert.equal(brief.target, analysis.sales.motion.target);
+    assert.equal(brief.value, analysis.sales.motion.value);
+    assert.equal(brief.cta, analysis.sales.motion.callToAction);
+    assert.notEqual(brief.cta, analysis.sales.pitch);
+    assert.deepEqual(brief.objections, analysis.sales.objections.slice(0, 3));
+  } finally { await vite.close(); }
 });
 
 test('visual plan shortens display copy without mutating the source strategy', async () => {

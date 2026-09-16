@@ -53,4 +53,8 @@ test('Spotify example uses the normal mock strategy pipeline', async () => {
   assert.equal(analysis.company.name, 'Spotify Launchpad');
   assert.match(analysis.icp.primary.name, /Independent and emerging artists/i);
   assert.ok(analysis.launch.checklist.length > 0);
+  const visibleCopy = JSON.stringify({ overview: analysis.positioning, messaging: analysis.messaging, sales: analysis.sales });
+  assert.doesNotMatch(visibleCopy, /\b(?:for for|manage run|coordinate run|around organize|organized around organize)\b/i);
+  assert.doesNotMatch(analysis.positioning.category, /\b(?:for|inside|within|to|and)$/i);
+  assert.match(analysis.sales.motion.openingQuestion, /\?$/);
 });

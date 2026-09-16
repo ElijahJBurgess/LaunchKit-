@@ -1,289 +1,263 @@
 import type { BusinessInput } from '../types/business';
 import type { PMMAnalysis } from '../types/pmm';
 
-function splitList(value: string | undefined, fallback: string[]): string[] {
-  if (!value || !value.trim()) return fallback;
-  return value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+function clean(value: string | undefined): string {
+  return (value || '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
 }
 
-function firstSentence(text: string): string {
-  const trimmed = (text || '').trim();
-  const match = trimmed.match(/^[^.!?]*[.!?]/);
-  return (match ? match[0] : trimmed).trim();
+function withoutPunctuation(value: string): string {
+  return clean(value).replace(/^["']+|["'.!?;,]+$/g, '').trim();
 }
 
-/** Lowercases the first letter (keeps everything else, including trailing punctuation, as-is). */
-function lowerFirst(text: string): string {
-  const t = text || 'this product';
-  return t.charAt(0).toLowerCase() + t.slice(1);
+function firstSentence(value: string): string {
+  const normalized = clean(value);
+  const match = normalized.match(/^.*?[.!?](?:\s|$)/);
+  return withoutPunctuation(match ? match[0] : normalized);
 }
 
-/**
- * Lowercases the first letter AND strips trailing sentence punctuation —
- * safe to embed mid-sentence (e.g. followed by a comma, dash, or "and ...").
- */
-function midClause(text: string): string {
-  const t = (text || '').trim().replace(/[.!?]+$/, '');
-  if (!t) return t;
-  return t.charAt(0).toLowerCase() + t.slice(1);
+function clipWords(value: string, limit: number): string {
+  return withoutPunctuation(value).split(/\s+/).filter(Boolean).slice(0, limit).join(' ');
 }
 
-/** A short label (a few words), not a full sentence — used for "category" fields. */
-function shortCategory(description: string): string {
-  const sentence = firstSentence(description)
-    .replace(/\.$/, '')
-    .replace(/^(a|an|the)\s+/i, '');
-  const cut = sentence.split(/,| built | designed | made | that | for /i)[0];
-  const words = cut.trim().split(/\s+/).filter(Boolean).slice(0, 6);
-  return words.join(' ');
+function lowerFirst(value: string): string {
+  const normalized = withoutPunctuation(value);
+  return normalized ? normalized.charAt(0).toLowerCase() + normalized.slice(1) : normalized;
 }
 
-function clamp(n: number, min = 40, max = 98): number {
-  return Math.max(min, Math.min(max, Math.round(n)));
+function capitalize(value: string): string {
+  const normalized = withoutPunctuation(value);
+  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : normalized;
 }
 
-/**
- * Deterministic pseudo-variance so repeated fields don't all land on
- * identical scores, without pulling in a real RNG dependency.
- */
-function hashSeed(input: string): number {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) {
-    h = (h * 31 + input.charCodeAt(i)) >>> 0;
+function audienceLabel(value: string): string {
+  const source = firstSentence(value) || 'Focused small teams';
+  const label = source.split(/\b(?:who|that|which|without|with no|looking for|seeking)\b/i)[0];
+  return clipWords(label, 7) || 'Focused small teams';
+}
+
+function productType(value: string): string {
+  const source = firstSentence(value) || 'guided planning workspace';
+  const category = source
+    .replace(/^(?:a|an|the)\s+/i, '')
+    .replace(/^(?:hypothetical|new|early-stage)\s+/i, '')
+    .split(/\b(?:that|which|designed to|built to|helps?|enables?)\b/i)[0]
+    .split(/\b(?:inside|within|for)\b/i)[0]
+    .replace(/\b(?:for|inside|within|to|and)\s*$/i, '');
+  return lowerFirst(clipWords(category, 6)) || 'guided planning workspace';
+}
+
+function problemConcept(value: string): string {
+  const sentences = clean(value).split(/(?<=[.!?])\s+/).filter(Boolean);
+  let source = firstSentence(
+    sentences.find((item) => /\b(?:scattered|fragmented|disconnected|manual|unclear)\b/i.test(item))
+      || sentences.find((item) => /\b(?:difficult|hard|struggl|slow|complex)\b/i.test(item))
+      || sentences[0]
+      || 'a fragmented workflow',
+  );
+  const state = source.match(/^(.{1,70}?)\s+(?:gets?|becomes?|is|are)\s+(scattered|fragmented|disconnected|manual|unclear|slow|complex)\b/i);
+  if (state) return `${state[2].toLowerCase()} ${lowerFirst(clipWords(state[1], 5))}`;
+  if (/\sbut\s/i.test(source)) {
+    const clauses = source.split(/\sbut\s/i);
+    source = clauses[clauses.length - 1] || source;
   }
-  return h;
+  source = source.replace(/^.*?\b(?:struggles?|difficulty|difficult|hard)\s+(?:with|to|in)\s+/i, '');
+  const cycle = source.match(/before\b.*\bduring\b.*\bafter\s+(?:a|an|the)?\s*([a-z-]+)/i);
+  if (cycle) return `${cycle[1].toLowerCase()} planning across the full cycle`;
+  source = source
+    .replace(/^.*?\b(?:becomes?|gets?|is|are)\s+(?=(?:scattered|fragmented|disconnected|manual|unclear|difficult|slow|complex)\b)/i, '')
+    .replace(/^what to do\s+/i, 'planning ');
+  return lowerFirst(clipWords(source, 7)) || 'a fragmented workflow';
+}
+
+function differentiationConcept(value: string | undefined, audience: string): string {
+  if (!clean(value)) return `a workflow shaped around ${lowerFirst(audience)}`;
+  let source = firstSentence(value || '');
+  source = source.replace(/^unlike\s+[^,]+,\s*/i, '');
+  source = source.replace(/^[^,]{0,45}\b(?:would|will|can)\s+/i, '');
+  const organized = source.match(/^organize(?:s|d)?\s+(.+?)\s+around\s+(.+?)(?:\s+and\s+|$)/i);
+  if (organized) return `a ${lowerFirst(clipWords(organized[1], 5)).replace(/^the\s+/i, '')} organized around ${lowerFirst(clipWords(organized[2], 6))}`;
+  const embedded = source.match(/^(.+?)\s+(?:is|are)\s+part of\s+(.+)$/i);
+  if (embedded) return `${lowerFirst(clipWords(embedded[1], 5))} embedded in ${lowerFirst(clipWords(embedded[2], 6))}`;
+  return lowerFirst(clipWords(source, 12)) || `a workflow shaped around ${lowerFirst(audience)}`;
+}
+
+function alternatives(value: string | undefined): string[] {
+  const entries = clean(value)
+    .split(/,|\band\b/i)
+    .map((item) => withoutPunctuation(item))
+    .filter(Boolean)
+    .slice(0, 5);
+  return entries.length ? entries : ['spreadsheets', 'manual workflows', 'generic project tools'];
+}
+
+function initiativeLabel(category: string, problem: string): string {
+  const planning = `${category} ${problem}`.match(/\b([a-z][a-z-]*)[-\s]planning\b/i);
+  if (planning) return planning[1].toLowerCase();
+  const launch = `${category} ${problem}`.match(/\b(launch|release|campaign)\b/i);
+  return launch ? launch[1].toLowerCase() : 'initiative';
+}
+
+function headline(name: string, problem: string): string {
+  let result = `${clipWords(name, 3)} turns ${clipWords(problem, 6)} into one clear coordinated plan`;
+  if (result.split(/\s+/).length < 8) result += ' for focused teams';
+  return result.split(/\s+/).slice(0, 16).join(' ');
+}
+
+function clamp(value: number, min = 40, max = 98): number {
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+function hashSeed(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  return hash;
 }
 
 export function generateMockAnalysis(input: BusinessInput): PMMAnalysis {
-  const name = input.businessName.trim() || 'Your product';
-  const description = input.description.trim() || 'a new product finding its footing';
-  const audience = input.targetAudience.trim() || 'early adopters who feel the problem most acutely';
-  const problem = input.customerProblem.trim() || 'the tools they use today are slow, generic, or not built for this specific job';
-  const differentiation = input.differentiation?.trim();
-  const goal = input.businessGoal || 'Acquire Customers';
-  const additional = input.additionalContext?.trim();
-
-  const competitorNames = splitList(input.competitors, ['an established incumbent', 'a DIY spreadsheet-and-Slack workflow', 'a cheaper, more generic tool']);
-  const seed = hashSeed(name + description + audience);
-  const completeness =
-    (differentiation ? 6 : 0) + (input.competitors ? 5 : 0) + (additional ? 4 : 0) + (input.website ? 3 : 0);
-
-  const overall = clamp(68 + completeness + (seed % 15));
-  const marketFit = clamp(overall - 4 + (seed % 7));
-  const messaging = clamp(overall - 2 + ((seed >> 2) % 9));
-  const diffScore = clamp(overall + (differentiation ? 6 : -6) + ((seed >> 4) % 7));
-  const icpScore = clamp(overall + 5 + ((seed >> 6) % 6));
-  const launchReadiness = clamp(overall - 10 + ((seed >> 8) % 8));
-  const positioningScore = clamp(overall + 2 + ((seed >> 10) % 6));
-
-  const category = shortCategory(description) || `${name}'s category`;
-
-  const diffLine = differentiation
-    ? differentiation
-    : `a sharper focus on ${audience.split(',')[0] || 'its core audience'} than broader, do-everything tools attempt`;
-
-  const primaryCompetitor = competitorNames[0];
+  const name = clean(input.businessName) || 'Your product';
+  const audience = audienceLabel(input.targetAudience);
+  const category = productType(input.description);
+  const problem = problemConcept(input.customerProblem);
+  const difference = differentiationConcept(input.differentiation, audience);
+  const competitorNames = alternatives(input.competitors);
+  const primaryAlternative = competitorNames[0];
+  const initiative = initiativeLabel(category, problem);
+  const goal = clean(input.businessGoal) || 'Acquire Customers';
+  const seed = hashSeed(`${name}|${category}|${audience}|${problem}`);
+  const completeness = [input.differentiation, input.competitors, input.additionalContext, input.website].filter((value) => clean(value)).length * 4;
+  const overall = clamp(66 + completeness + (seed % 13));
+  const valueProposition = `Bring ${problem}, priorities, and next steps into one guided ${category} for ${lowerFirst(audience)}.`;
+  const positioningStatement = `For ${lowerFirst(audience)}, ${name} is a ${category} that turns ${problem} into one coordinated plan.`;
+  const primaryKpi = goal === 'Increase Adoption' ? 'Weekly active users completing the core workflow' : goal === 'Acquire Customers' ? 'New qualified customers per week' : 'Users completing the core workflow after launch';
 
   return {
     company: {
       name,
-      summary: `${name} is ${lowerFirst(description)}${description.trim().endsWith('.') ? '' : '.'} The product is still early, but the wedge — ${midClause(diffLine)} — is clear enough to build a go-to-market plan around.`,
-      category,
+      summary: `${name} is a ${category} for ${lowerFirst(audience)}. Its core difference is ${difference}.`,
+      category: capitalize(category),
     },
-
     score: {
       overall,
-      marketFit,
-      messaging,
-      differentiation: diffScore,
-      icp: icpScore,
-      launchReadiness,
-      positioning: positioningScore,
+      marketFit: clamp(overall - 3 + (seed % 6)),
+      messaging: clamp(overall - 2 + ((seed >> 2) % 7)),
+      differentiation: clamp(overall + (clean(input.differentiation) ? 5 : -5)),
+      icp: clamp(overall + 4),
+      launchReadiness: clamp(overall - 8 + ((seed >> 4) % 6)),
+      positioning: clamp(overall + 2),
     },
-
     recommendations: {
-      topOpportunity: `${name} has an opportunity to own ${problem.toLowerCase().startsWith('the') ? midClause(problem) : 'the moment where ' + midClause(problem)} — that's underserved by ${primaryCompetitor}, and it maps directly to why ${audience.split(',')[0] || 'your core buyer'} would switch.`,
-      biggestRisk: `Without a sharp wedge in the first sentence of every page, ${name} risks blending into "yet another tool" territory next to ${primaryCompetitor} — the differentiation is real but has to be said out loud, every time.`,
-      nextMove: `Ship one landing page and one outbound message built entirely around "${midClause(diffLine)}," and get it in front of ${audience.split(',')[0] || 'your target users'} before broadening the pitch.`,
+      topOpportunity: `Own the connection between ${problem} and a guided workflow designed for ${lowerFirst(audience)}.`,
+      biggestRisk: `Broad messaging could make ${name} sound interchangeable with ${lowerFirst(primaryAlternative)} instead of highlighting ${difference}.`,
+      nextMove: `Test one landing-page message about ${problem} with a small group of ${lowerFirst(audience)} before expanding the campaign.`,
     },
-
     icp: {
       primary: {
-        name: audience.split(',')[0]?.trim() || 'Primary buyer',
-        who: `${audience}. They're evaluating tools right now because ${problem.charAt(0).toLowerCase()}${problem.slice(1)}`,
-        jobsToBeDone: [
-          `Get ${category.trim() || 'this problem'} handled without adding another sprawling tool to the stack`,
-          `Show progress to a boss, client, or teammate quickly`,
-        ],
-        painPoints: [
-          problem,
-          `Existing options like ${primaryCompetitor} require workarounds to do the one thing ${name} does natively`,
-        ],
-        motivations: [
-          `Look competent and organized in front of the people they answer to`,
-          `Spend less time on the mechanics of the work and more on the work itself`,
-        ],
-        buyingTriggers: [
-          `A visible failure caused by the current process (a missed deadline, a dropped detail, an embarrassing mistake)`,
-          `Onboarding a new project, client, or team that raises the stakes of staying disorganized`,
-        ],
-        objections: [
-          `"We already have a tool that sort of does this"`,
-          `"Is this actually different, or just a reskin of ${primaryCompetitor}?"`,
-        ],
-        whatTheyCareAbout: [`Speed to value`, `Not having to convince a whole team to switch`, `Clear, honest pricing`],
+        name: audience,
+        who: `${audience} who need a clearer way to coordinate their next ${initiative}.`,
+        jobsToBeDone: [`Replace ${problem} with one coordinated plan`, 'Keep priorities, ownership, and next steps visible'],
+        painPoints: [capitalize(problem), 'Important context and ownership spread across separate tools'],
+        motivations: ['Run the work with more clarity and confidence', 'Spend less time maintaining a manual process'],
+        buyingTriggers: ['A new initiative exposes gaps in the current workflow', 'The existing process creates unclear ownership or missed handoffs'],
+        objections: [`We already use ${primaryAlternative}`, 'Changing the current workflow may create more work'],
+        whatTheyCareAbout: ['Clear ownership', 'A simple path to the next action', 'Fit with the way the work already happens'],
       },
       secondary: {
-        name: `Adjacent buyer`,
-        who: `A less central but still viable audience: people adjacent to ${audience.split(',')[0] || 'the primary buyer'} who feel the same problem at smaller scale.`,
-        jobsToBeDone: [`Solve a lighter-weight version of the same problem without enterprise overhead`],
-        painPoints: [`Most tools in this space are priced and built for bigger teams than theirs`],
-        motivations: [`Punch above their weight without hiring a bigger team`],
-        buyingTriggers: [`Outgrowing a spreadsheet, doc, or manual process that used to be "good enough"`],
-        objections: [`Price sensitivity relative to a small team's budget`, `"Will I actually use all of this?"`],
-        whatTheyCareAbout: [`Simplicity over feature count`, `A tool that scales with them, not past them`],
+        name: `Adjacent ${clipWords(audience, 5)}`,
+        who: `People adjacent to ${lowerFirst(audience)} who manage a lighter version of the same workflow.`,
+        jobsToBeDone: ['Coordinate a smaller initiative without adding operational overhead'],
+        painPoints: ['Generic tools require more setup than the work justifies'],
+        motivations: ['Create a repeatable process with a small team'],
+        buyingTriggers: ['A manual workflow stops providing enough visibility'],
+        objections: ['The use case may feel too occasional for another tool'],
+        whatTheyCareAbout: ['Simplicity', 'Low setup effort', 'A workflow that can grow with the work'],
       },
     },
-
     positioning: {
-      statement: `For ${audience.split(',')[0]?.trim() || 'teams who feel this problem'}, ${name} is a ${category || 'product'} built to solve "${firstSentence(problem).replace(/\.$/, '')}" — unlike ${primaryCompetitor}, which wasn't built for this specific job.`,
-      valueProposition: `${name} turns "${problem}" into a solved problem — built specifically for ${audience.split(',')[0]?.trim() || 'the people who deal with this daily'}, not retrofitted from a broader tool.`,
-      elevatorPitch: `${name} is ${lowerFirst(description)} We built it because ${midClause(problem)}, and nothing on the market — including ${primaryCompetitor} — treats that as the core problem instead of an edge case.`,
-      category,
-      differentiation: [
-        diffLine,
-        `Purpose-built for ${audience.split(',')[0]?.trim() || 'this specific audience'} instead of generalized for everyone`,
-        `Faster time-to-value than switching an entire team onto ${primaryCompetitor}`,
-      ],
-      whyNow: `${audience.split(',')[0]?.trim() || 'This audience'} is actively re-evaluating their tools this year, and the gap ${name} fills — ${midClause(problem)} — has only gotten more visible as teams do more with less.`,
+      headline: headline(name, problem),
+      statement: positioningStatement,
+      valueProposition,
+      elevatorPitch: `${name} gives ${lowerFirst(audience)} one guided place to replace ${problem} with a coordinated plan. Its advantage is ${difference}, so the workflow starts closer to the way the work happens.`,
+      category: capitalize(category),
+      differentiation: [capitalize(difference), `Designed around the workflow of ${lowerFirst(audience)}`, 'Connects strategic direction with concrete next actions'],
+      whyNow: `As the work spans more channels and contributors, ${lowerFirst(audience)} need clearer ownership and a more coherent operating rhythm.`,
     },
-
     messaging: {
-      hero: `${firstSentence(description).replace(/\.$/, '') || name}. Built for ${audience.split(',')[0]?.trim() || 'people who need it to just work'}.`,
-      supportingMessages: [
-        `Solves ${midClause(problem)} — not a symptom of it.`,
-        `Set up in minutes, not a quarter-long rollout.`,
-        `Built for ${audience.split(',')[0]?.trim() || 'your team'}, not retrofitted from an enterprise suite.`,
-      ],
-      pillars: [`Purpose-built, not general-purpose`, `Fast time-to-value`, `Honest, transparent pricing`],
+      hero: `Turn ${problem} into one clear plan.`,
+      supportingMessages: [`Bring strategy and execution into the same ${category}`, 'See ownership and next steps without rebuilding the process', `Work from a structure designed for ${lowerFirst(audience)}`],
+      pillars: ['Clarity from the start', 'A workflow that fits', 'Strategy connected to action'],
       featureBenefits: [
-        {
-          feature: firstSentence(description).replace(/\.$/, '') || `${name}'s core workflow`,
-          benefit: `${audience.split(',')[0]?.trim() || 'Your team'} gets this handled without extra tooling overhead`,
-          outcome: `Less time spent managing the process, more time spent on the actual work`,
-        },
-        {
-          feature: `Built specifically around ${audience.split(',')[0]?.trim() || 'this use case'}`,
-          benefit: `No generic workflow to bend into shape — it already fits`,
-          outcome: `Faster adoption and fewer "this doesn't quite work for us" complaints`,
-        },
-        {
-          feature: `Lightweight setup, no migration project`,
-          benefit: `Teams can try it without a procurement cycle`,
-          outcome: `Shorter sales cycles and faster time to first value`,
-        },
+        { feature: 'Guided planning workflow', benefit: 'Teams start with a clear structure', outcome: 'Less ambiguity about what happens next' },
+        { feature: 'Shared priorities and ownership', benefit: 'Contributors can see their role in the plan', outcome: 'Fewer handoff gaps across the workflow' },
+        { feature: `Structure built for ${lowerFirst(audience)}`, benefit: 'The process requires less adaptation', outcome: 'The team can focus on the work instead of configuring the tool' },
       ],
     },
-
     competition: {
-      competitors: competitorNames.slice(0, 3).map((c, i) => {
-        const audiencePrimary = audience.split(',')[0]?.trim() || 'this audience';
-        const strengths = [
-          `Established, trusted, broad feature set`,
-          `Cheap, familiar, already in most workflows`,
-          `Deep integrations and a large existing user base`,
-        ];
-        const weaknesses = [
-          `Not built specifically for ${midClause(problem)} — ${audiencePrimary} has to bend it into shape`,
-          `General-purpose by design, so it takes real setup work before it fits ${audiencePrimary}'s actual workflow`,
-          `Priced and packaged for larger teams, with a learning curve ${audiencePrimary} didn't sign up for`,
-        ];
-        const opportunities = [
-          `Win on being purpose-built: less setup, faster time-to-value, and messaging that speaks directly to this problem instead of around it`,
-          `Win on simplicity — ${audiencePrimary} can be live in minutes instead of running a rollout project`,
-          `Win on focus: do the one job ${audiencePrimary} cares about extremely well, instead of competing on total feature count`,
-        ];
-        return {
-          name: c,
-          strength: strengths[i % strengths.length],
-          weakness: weaknesses[i % weaknesses.length],
-          opportunity: opportunities[i % opportunities.length],
-        };
-      }),
-      takeaway: `Don't compete with ${primaryCompetitor} on feature count — compete on fit. ${name} should own the specific job ${audience.split(',')[0]?.trim() || 'this audience'} is hiring a tool to do, not try to be a smaller version of an established platform.`,
+      competitors: competitorNames.slice(0, 3).map((alternative, index) => ({
+        name: alternative,
+        strength: index === 0 ? 'Familiar and already present in many workflows' : 'Flexible enough to support a wide range of tasks',
+        weakness: `May require ${lowerFirst(audience)} to assemble and maintain their own process for ${problem}`,
+        opportunity: `Position ${name} around ${difference} and the reduced need to design the workflow from scratch`,
+      })),
+      takeaway: `Compete on workflow fit rather than total feature count: ${name} should make ${problem} clearer for ${lowerFirst(audience)}.`,
       swot: {
-        strengths: [`Sharp, differentiated wedge (${midClause(diffLine)})`, `Fast to try, fast to get value from`],
-        weaknesses: [`Smaller team and brand recognition than ${primaryCompetitor}`, `Fewer integrations at this stage`],
-        opportunities: [`${audience.split(',')[0]?.trim() || 'Target buyers'} actively frustrated with generic tools right now`, `Word-of-mouth potential within a tight-knit audience`],
-        threats: [`${primaryCompetitor} could ship a competing feature aimed at this same wedge`, `Category confusion if messaging drifts toward "another ${category.trim() || 'tool'}"`],
+        strengths: [capitalize(difference), `A focused workflow for ${lowerFirst(audience)}`],
+        weaknesses: ['An early product requires category education', 'A focused scope may not replace every existing tool'],
+        opportunities: [`Teams using ${lowerFirst(primaryAlternative)} may want a clearer starting structure`, 'A focused workflow can support strong peer recommendations'],
+        threats: ['Established alternatives may add similar guided templates', 'Broad messaging could blur the product category'],
       },
     },
-
     launch: {
       preLaunch: {
         name: 'Pre-Launch',
-        objective: `Validate messaging with ${audience.split(',')[0]?.trim() || 'the target audience'} and build a waitlist of people who've confirmed the problem is real for them`,
-        channels: ['Personal network / warm outreach', 'A focused landing page', 'One relevant online community'],
-        tactics: [`Talk to 10-15 people who match ${audience.split(',')[0]?.trim() || 'the ICP'} before writing final copy`, `Publish a single sharp landing page built around "${diffLine}"`, `Collect emails, not just page views`],
-        kpi: 'Qualified waitlist signups',
+        objective: `Validate the problem and message with ${lowerFirst(audience)}`,
+        channels: ['Focused landing page', 'Direct customer conversations', 'One relevant community'],
+        tactics: ['Interview a small set of target users about their current workflow', `Test the message around ${problem}`, 'Collect qualified interest with a single clear next step'],
+        kpi: 'Qualified conversations and waitlist signups',
       },
       launch: {
         name: 'Launch',
-        objective: `Convert warm interest into first paying (or first active) users`,
-        channels: goal === 'Enter a New Market' ? ['Targeted outreach in the new market', 'Product Hunt', 'Founder-led social'] : ['Product Hunt', 'Founder-led social (LinkedIn/X)', 'Email to the pre-launch list'],
-        tactics: ['Ship the Product Hunt / launch-day assets ahead of time', 'Personally onboard the first cohort of users', 'Ask every early user for one specific piece of feedback'],
-        kpi: goal === 'Launch a Product' ? 'Activated users in week one' : 'New signups converted to active use',
+        objective: 'Turn validated interest into active use of the core workflow',
+        channels: ['Founder-led social', 'Email to validated prospects', 'A focused launch platform'],
+        tactics: ['Prepare launch assets around one consistent message', 'Personally support the first group through the core workflow', 'Capture friction and questions during onboarding'],
+        kpi: 'Users completing the core workflow',
       },
       postLaunch: {
         name: 'Post-Launch',
-        objective: 'Turn early usage into retained, referring customers',
-        channels: ['Email / lifecycle messaging', 'Customer interviews', 'Case studies from the best-fit early users'],
-        tactics: ['Interview the users who got value fastest — that’s the sharpest version of the ICP', 'Fix the top onboarding drop-off point', 'Turn one strong early result into a case study or testimonial'],
-        kpi: 'Week-4 retention / repeat usage',
+        objective: 'Use early behavior and interviews to improve retention and positioning',
+        channels: ['Lifecycle email', 'Customer interviews', 'Targeted follow-up'],
+        tactics: ['Review where users stop in the workflow', 'Interview users who complete the core action', 'Refine the message around the strongest repeated value'],
+        kpi: 'Repeat use of the core workflow',
       },
-      primaryKPI: goal === 'Acquire Customers' ? 'New qualified customers per week' : goal === 'Increase Adoption' ? 'Weekly active users' : 'Activated users (completed the core workflow once)',
-      secondaryKPIs: ['Landing page visitor → signup conversion', 'Time to first value', 'Early NPS / qualitative feedback'],
-      checklist: [
-        'Landing page live and built around the core positioning statement',
-        'Analytics in place to track signup → activation',
-        'First 10-15 target users interviewed or contacted directly',
-        'Launch-day content (post, email, Product Hunt assets) drafted ahead of time',
-        'A plan for personally onboarding the first cohort',
-      ],
+      primaryKPI: primaryKpi,
+      secondaryKPIs: ['Landing-page visitor to signup conversion', 'Core workflow completion rate', 'Repeat usage after initial activation'],
+      checklist: ['Validate the core message with target users', 'Publish one focused landing page', 'Instrument signup and workflow completion', 'Prepare launch email and social assets', 'Plan personal onboarding for the first users'],
     },
-
     content: {
-      landingPage: `Headline: ${firstSentence(description).replace(/\.$/, '') || name}\n\nSubhead: Built for ${audience.split(',')[0]?.trim() || 'people who need this to just work'} — not retrofitted from a tool meant for everyone.\n\n${name} exists because ${problem.charAt(0).toLowerCase()}${problem.slice(1)} With ${name}, that's handled by default, not something you configure your way into.\n\nCTA: Try ${name} free`,
-      launchEmail: `Subject: Introducing ${name}\n\nHi {{first_name}},\n\nWe built ${name} because ${midClause(problem)} — and every tool we tried treated that as an afterthought instead of the main problem.\n\n${name} is ${lowerFirst(description)}\n\nIf that sounds like something you've been dealing with, I'd love for you to try it.\n\nCTA: Get started with ${name} →`,
-      linkedin: `Most tools built for ${category.trim() || 'this space'} weren't actually built for ${audience.split(',')[0]?.trim() || 'this specific problem'}.\n\nWe kept running into ${midClause(problem)}, and every existing option — including ${primaryCompetitor} — made us bend our workflow to fit theirs.\n\nSo we built ${name}: ${lowerFirst(description)}\n\nIf this sounds familiar, I'd genuinely love your feedback. Link in comments.`,
-      paidSocial: `Stop working around ${primaryCompetitor}.\n\n${name} is built specifically for ${audience.split(',')[0]?.trim() || 'you'} — no setup project, no bending a generic tool into shape.\n\nTry it free →`,
-      googleAd: `Headline 1: ${name} — ${category.trim() || 'Built For You'}\nHeadline 2: Purpose-Built, Not Generic\nDescription: ${firstSentence(description).replace(/\.$/, '') || 'Solve it directly'}. Built for ${audience.split(',')[0]?.trim() || 'your team'}. Try it free today.`,
-      pressRelease: `FOR IMMEDIATE RELEASE\n\n${name} Launches to Help ${audience.split(',')[0]?.trim() || 'Teams'} Solve ${category.trim() || 'a Long-Standing Problem'}\n\n${name} today announced the launch of its ${category.trim() || 'product'}, built specifically for ${audience.split(',')[0]?.trim() || 'its target market'}. Unlike general-purpose tools such as ${primaryCompetitor}, ${name} is built around one problem: ${problem.charAt(0).toLowerCase()}${problem.slice(1)}\n\n"${lowerFirst(description)}" said a spokesperson for ${name}. "${midClause(diffLine).replace(/^./, (c) => c.toUpperCase())} is what makes this different."\n\n${name} is available today.\n\nAbout ${name}: ${lowerFirst(description)}`,
-      productHunt: `Tagline: ${firstSentence(description).replace(/\.$/, '').slice(0, 60) || name}\n\nDescription: ${name} helps ${audience.split(',')[0]?.trim() || 'its users'} stop dealing with ${problem.charAt(0).toLowerCase()}${problem.slice(1)} It's ${lowerFirst(description)}\n\nMaker comment: Hey Product Hunt! We built ${name} after running into ${midClause(problem)} ourselves. Would love your feedback — especially from anyone who fits ${audience.split(',')[0]?.trim() || 'our target audience'}.`,
+      landingPage: `Headline: ${headline(name, problem)}\n\nSubhead: ${valueProposition}\n\n${name} gives ${lowerFirst(audience)} a clearer way to connect strategy, ownership, and execution.\n\nCTA: Build a clearer plan`,
+      launchEmail: `Subject: A clearer alternative to ${problem}\n\n${name} brings the work into one guided ${category}. It is designed for ${lowerFirst(audience)}, with ${difference}.\n\nCTA: Explore ${name}`,
+      linkedin: `${capitalize(problem)} should not require a patchwork process. ${name} gives ${lowerFirst(audience)} one guided workflow for moving from strategy to action. We are sharing the first version and looking for thoughtful feedback.`,
+      paidSocial: `${capitalize(problem)}, one guided workflow. See how ${name} helps ${lowerFirst(audience)} move from plan to action.`,
+      googleAd: `Headline 1: ${clipWords(name, 4)}\nHeadline 2: A Clearer Guided Workflow\nDescription: Coordinate ${clipWords(problem, 6)} with a focused ${category}.`,
+      pressRelease: `${name} introduces a ${category} for ${lowerFirst(audience)}. The product brings ${problem} into one guided workflow organized around ${difference}.`,
+      productHunt: `Tagline: A guided ${category} for ${lowerFirst(audience)}\n\n${name} connects strategy, ownership, and execution in one focused workflow. We are looking for feedback from teams managing ${problem}.`,
     },
-
     sales: {
-      onePager: `${name} is ${lowerFirst(description)} Built for ${audience.split(',')[0]?.trim() || 'teams who feel this problem'}, it solves ${midClause(problem)} directly, instead of as an afterthought bolted onto a broader tool like ${primaryCompetitor}. Teams get value in minutes, not after a migration project.`,
-      battlecard: `VS. ${primaryCompetitor.toUpperCase()}\n\nTheir strength: established, broad feature set, already familiar to buyers.\nTheir weakness: not built for ${midClause(problem)} specifically — it's a workaround, not a fit.\n\nOur angle: ${midClause(diffLine)}. Lead with the specific job, not the feature comparison.`,
+      motion: {
+        target: `${audience} preparing their next ${initiative}`,
+        openingQuestion: 'How are you coordinating this work today?',
+        value: valueProposition,
+        reasonToBelieve: `The key difference is ${difference}, rather than a generic project template.`,
+        callToAction: initiative === 'initiative' ? 'Build your next plan.' : `Build your next ${initiative} plan.`,
+      },
+      discoveryQuestions: ['How are you coordinating this work today?', 'Where does the current process create the most friction?', `What would make your next ${initiative} feel more organized?`],
       objections: [
-        `"We already use ${primaryCompetitor}"`,
-        `"How is this actually different from what we have?"`,
-        `"Is this worth switching for?"`,
+        { objection: `We already use ${primaryAlternative}.`, response: `Keep it for the work it handles well, then compare how a guided workflow replaces ${problem} without requiring the team to design the process.` },
+        { objection: 'How is this different from our current setup?', response: `The recommended difference is ${difference}, with strategy and next actions kept in the same workflow.` },
+        { objection: 'Is changing the workflow worth the effort?', response: 'Start with one active initiative and judge whether the clearer structure improves ownership and coordination.' },
       ],
-      objectionHandling: [
-        `Agree that switching tools is real work — then ask what it currently costs them (in time or errors) to work around the gap ${name} closes.`,
-        `Point to the one thing ${name} does that ${primaryCompetitor} would need a workaround for: ${midClause(diffLine)}.`,
-        `Reframe "switching" as "adding" — most teams run ${name} alongside existing tools for the one job it does best, then expand from there.`,
-      ],
-      discoveryQuestions: [
-        `Walk me through what happens today when ${midClause(problem)}?`,
-        `What have you tried so far — ${primaryCompetitor}, spreadsheets, something else?`,
-        `If this were solved, what would you expect to change in the next month?`,
-      ],
-      pitch: `${name} exists because ${midClause(problem)}, and nothing built for a general audience — including ${primaryCompetitor} — treats that as the core problem. We built it specifically for ${audience.split(',')[0]?.trim() || 'this audience'}, so it works the way they already think about the problem, not the way a broader tool assumes everyone does.`,
+      onePager: `${name} is a ${category} for ${lowerFirst(audience)}. It replaces ${problem} with one guided workflow connecting strategy, ownership, and execution. Instead of assembling the process with ${primaryAlternative} and other general tools, teams start with ${difference}. ${initiative === 'initiative' ? 'Build your next plan.' : `Build your next ${initiative} plan.`}`,
+      battlecard: `${capitalize(primaryAlternative)} and other general tools are familiar and flexible, which is why teams use them. Their likely gap is the setup required to replace ${problem} with a repeatable process. Lead with ${difference} and the ability to begin with a focused workflow rather than a blank template.`,
+      pitch: `${capitalize(problem)} can separate strategy from execution across several tools. ${name} brings that work into one guided ${category} for ${lowerFirst(audience)}. Its advantage is ${difference}, giving the team a clearer structure for its next initiative.`,
     },
   };
 }
