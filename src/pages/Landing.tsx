@@ -10,7 +10,7 @@ export function Landing() {
 
   function openExample() {
     setBusinessInput(EXAMPLE_BUSINESS);
-    navigate('/onboarding', { state: { step: 2 } });
+    navigate('/onboarding', { state: { example: true } });
   }
 
   return (
@@ -37,7 +37,7 @@ export function Landing() {
           </p>
           <div className="landing-actions">
             <button className="landing-primary" onClick={() => navigate('/onboarding')}>Get started <span>→</span></button>
-            <button className="landing-secondary" onClick={openExample}>See example output</button>
+            <button className="landing-secondary" onClick={openExample}>Try an example</button>
           </div>
           <div className="trust-row" aria-label="LaunchKit capabilities">
             <span>Product positioning</span>

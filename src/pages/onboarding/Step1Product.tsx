@@ -59,6 +59,7 @@ export function Step1Product({ value, onChange, onNext, onTryExample, canContinu
       <button type="button" className="example-link" onClick={onTryExample}>
         Try an example →
       </button>
+      <span className="example-link-note">Explore LaunchKit with a hypothetical Spotify product.</span>
     </div>
   );
 }

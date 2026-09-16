@@ -44,6 +44,9 @@
   background:none; border:none; cursor:pointer; padding:0.4rem; transition:color 150ms ease;
 }
 .example-link:hover{ color:var(--ink); }
+.example-link-note{ display:block; margin:.15rem auto 0; color:var(--ink-faint); font-size:.72rem; text-align:center; }
+.example-indicator{ display:flex; align-items:center; gap:.65rem; margin:-1.5rem 0 1rem; padding:.65rem .8rem; border:1px solid #d7e7dc; border-radius:var(--r-sm); background:#f2f8f3; color:#607169; font-size:.76rem; }
+.example-indicator span{ color:#174a34; font-weight:750; }
 
 /* goal cards */
 .goal-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-top:0.5rem; }
@@ -59,4 +62,5 @@
 @media (max-width:560px){
   .onboarding-card{ padding:1.8rem 1.4rem; }
   .onboarding-heading{ font-size:1.6rem; }
+  .example-indicator{ align-items:flex-start; flex-direction:column; gap:.1rem; }
 }
