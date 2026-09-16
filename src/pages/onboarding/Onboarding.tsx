@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppState } from '../../state/AppState';
 import { EXAMPLE_BUSINESS } from '../../data/exampleBusiness';
 import { OnboardingProgress } from './OnboardingProgress';
@@ -10,7 +10,9 @@ import './Onboarding.css';
 
 export function Onboarding() {
   const { businessInput, setBusinessInput } = useAppState();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const location = useLocation();
+  const initialStep = location.state && typeof location.state === 'object' && 'step' in location.state && location.state.step === 2 ? 2 : 1;
+  const [step, setStep] = useState<1 | 2 | 3>(initialStep);
   const navigate = useNavigate();
 
   const step1Valid = businessInput.businessName.trim() !== '' && businessInput.description.trim() !== '';
