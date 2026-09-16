@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
+import { readFile } from 'node:fs/promises';
 
 const viteConfig = { server: { middlewareMode: true, hmr: false }, appType: 'custom' };
+
+test('workspace header hides the export control', async () => {
+  const source = await readFile(new URL('../src/pages/workspace/Workspace.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, />\s*Export\s*▾\s*</);
+  assert.doesNotMatch(source, /export-dropdown/);
+});
 
 const business = {
   businessName: 'Fernpath',

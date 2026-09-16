@@ -2,7 +2,6 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../../state/AppState';
 import { WORKSPACE_TABS, WORKSPACE_TAB_LABELS, type WorkspaceTab } from '../../types/pmm';
-import { downloadMarkdown, copyFullStrategy } from '../../lib/export';
 import { Overview } from './tabs/Overview';
 import { Icp } from './tabs/Icp';
 import { Positioning } from './tabs/Positioning';
@@ -30,16 +29,7 @@ const TAB_COMPONENTS: Record<WorkspaceTab, ComponentType> = {
 export function Workspace() {
   const { businessInput, analysis, resetAll } = useAppState();
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('overview');
-  const [exportOpen, setExportOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!exportOpen) return;
-    const close = () => setExportOpen(false);
-    document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
-  }, [exportOpen]);
 
   useEffect(() => {
     if (!analysis) {
@@ -47,32 +37,9 @@ export function Workspace() {
     }
   }, [analysis, navigate]);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 1600);
-  }
-
   function handleRestart() {
     resetAll();
     navigate('/');
-  }
-
-  async function handleCopyStrategy() {
-    if (!analysis) return;
-    setExportOpen(false);
-    try {
-      await copyFullStrategy(analysis);
-      showToast('Full strategy copied');
-    } catch {
-      showToast('Could not copy — try downloading instead');
-    }
-  }
-
-  function handleDownload() {
-    if (!analysis) return;
-    downloadMarkdown(analysis);
-    setExportOpen(false);
-    showToast('Markdown downloaded');
   }
 
   if (!analysis) return null;
@@ -90,17 +57,6 @@ export function Workspace() {
           <span className="status-pill">✓ Workspace ready</span>
         </div>
         <div className="topbar-right">
-          <div className="export-dropdown">
-            <button className="btn btn-ghost btn-sm" onClick={() => setExportOpen((v) => !v)}>
-              Export ▾
-            </button>
-            {exportOpen && (
-              <div className="export-dropdown-menu">
-                <button onClick={handleDownload}>Download Markdown</button>
-                <button onClick={handleCopyStrategy}>Copy Full Strategy</button>
-              </div>
-            )}
-          </div>
           <button className="btn btn-primary btn-sm" onClick={handleRestart}>
             Start a new analysis →
           </button>
@@ -126,7 +82,6 @@ export function Workspace() {
         <ActiveComponent />
       </div>
 
-      <div className={`copy-toast ${toast ? 'show' : ''}`}>{toast}</div>
     </div>
   );
 }
