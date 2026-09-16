@@ -87,7 +87,7 @@ export function Analysis() {
             <div className="analysis-progress-track">
               <div className="analysis-progress-fill" style={{ width: `${pct}%` }} />
             </div>
-            <div className="analysis-sub2">This usually takes a few seconds.</div>
+            <div className="analysis-sub2">Your strategy is being prepared. This may take a minute or two.</div>
           </>
         )}
       </div>

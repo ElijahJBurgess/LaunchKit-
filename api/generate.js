@@ -1,29 +1,28 @@
-const { generateFromPrompt } = require('../lib/anthropic');
+import { generateAnalysis, GenerationError } from '../lib/openai.js';
+import { isSection } from '../shared/pmmSchema.js';
 
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const required = ['businessName', 'description', 'targetAudience', 'customerProblem', 'businessGoal'];
+const fields = [...required, 'website', 'differentiation', 'competitors', 'additionalContext'];
 
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  const prompt = req.body && req.body.prompt;
-  if (!prompt || typeof prompt !== 'string') {
-    res.status(400).json({ error: 'Missing "prompt" string in request body' });
-    return;
+  const { input, section } = req.body || {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)
+    || required.some((key) => typeof input[key] !== 'string' || !input[key].trim())
+    || fields.some((key) => input[key] !== undefined && (typeof input[key] !== 'string' || input[key].length > 10000))
+    || (section !== undefined && !isSection(section))) {
+    return res.status(400).json({ error: 'Provide valid business details and an optional analysis section. Each field must be at most 10,000 characters.' });
   }
-
+  const business = Object.fromEntries(fields.filter((key) => input[key] !== undefined).map((key) => [key, input[key].trim()]));
   try {
-    const result = await generateFromPrompt(prompt);
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(502).json({ error: (err && err.message) || 'Generation failed' });
+    return res.status(200).json(await generateAnalysis(business, section));
+  } catch (error) {
+    return res.status(error instanceof GenerationError ? error.status : 502).json({
+      error: error instanceof GenerationError ? error.message : 'Strategy generation failed. Please try again.',
+    });
   }
-};
+}

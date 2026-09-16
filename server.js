@@ -1,26 +1,24 @@
-// Production-style server: serves the Vite build output (run `npm run build`
-// first) plus the /api/generate route. Only needed once VITE_USE_MOCK_AI=false
-// and you're connecting the real Anthropic API — for local mock-mode dev, use
-// `npm run dev` (Vite) instead, which needs no server at all.
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const generateHandler = require('./api/generate');
+import 'dotenv/config';
+import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import generateHandler from './api/generate.js';
 
+const directory = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json({ limit: '1mb' }));
-app.use(express.static(path.join(__dirname, 'dist')));
-
+app.use(express.json({ limit: '128kb' }));
 app.all('/api/generate', generateHandler);
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.use(express.static(path.join(directory, 'dist')));
+app.get('*', (_req, res) => res.sendFile(path.join(directory, 'dist', 'index.html')));
+app.use((error, _req, res, _next) => {
+  res.status(error.status === 413 ? 413 : 400).json({ error: 'Invalid or oversized request body.' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`LaunchKit (built) running at http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn('Warning: ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key.');
-  }
+const port = process.env.PORT || 3000;
+// Local use by default; public hosting needs authentication and usage controls.
+const host = process.env.HOST || '127.0.0.1';
+app.listen(port, host, () => {
+  console.log(`LaunchKit running at http://${host}:${port}`);
+  if (process.env.VITE_USE_MOCK_AI !== 'false') console.log('Mock mode enabled; OpenAI calls are disabled.');
+  else if (!process.env.OPENAI_API_KEY) console.warn('Set OPENAI_API_KEY in .env before using live AI.');
 });

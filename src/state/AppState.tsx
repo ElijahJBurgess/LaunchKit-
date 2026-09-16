@@ -1,9 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { BusinessInput } from '../types/business';
 import { EMPTY_BUSINESS_INPUT } from '../types/business';
 import type { PMMAnalysis } from '../types/pmm';
-import { generatePMMAnalysis } from '../services/pmmService';
-import { generateMockAnalysis } from '../data/mockPMMAnalysis';
+import { generatePMMAnalysis, regeneratePMMSection } from '../services/pmmService';
 
 interface AppStateValue {
   businessInput: BusinessInput;
@@ -15,8 +14,8 @@ interface AppStateValue {
   analysisError: string | null;
   runAnalysis: () => Promise<void>;
 
-  /** Regenerates a single top-level section of the analysis (mock behavior for now). */
-  regenerateSection: <K extends keyof PMMAnalysis>(key: K) => void;
+  /** Regenerates only the requested section using the selected AI mode. */
+  regenerateSection: <K extends keyof PMMAnalysis>(key: K) => Promise<void>;
 
   resetAll: () => void;
 }
@@ -24,6 +23,7 @@ interface AppStateValue {
 const AppStateContext = createContext<AppStateValue | null>(null);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
+  const generationVersion = useRef(0);
   const [businessInput, setBusinessInputState] = useState<BusinessInput>(EMPTY_BUSINESS_INPUT);
   const [analysis, setAnalysis] = useState<PMMAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -38,30 +38,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const runAnalysis = useCallback(async () => {
+    const version = ++generationVersion.current;
+    setAnalysis(null);
     setIsAnalyzing(true);
     setAnalysisError(null);
     try {
       const result = await generatePMMAnalysis(businessInput);
-      setAnalysis(result);
+      if (version === generationVersion.current) setAnalysis(result);
     } catch (err) {
-      setAnalysisError(err instanceof Error ? err.message : 'Something went wrong generating your strategy.');
+      if (version === generationVersion.current) setAnalysisError(err instanceof Error ? err.message : 'Something went wrong generating your strategy.');
     } finally {
-      setIsAnalyzing(false);
+      if (version === generationVersion.current) setIsAnalyzing(false);
     }
   }, [businessInput]);
 
   const regenerateSection = useCallback(
-    <K extends keyof PMMAnalysis>(key: K) => {
-      setAnalysis((prev) => {
-        if (!prev) return prev;
-        const fresh = generateMockAnalysis({ ...businessInput, additionalContext: businessInput.additionalContext + ' ' + Date.now() });
-        return { ...prev, [key]: fresh[key] };
-      });
+    async <K extends keyof PMMAnalysis>(key: K) => {
+      const version = generationVersion.current;
+      const fresh = await regeneratePMMSection(businessInput, key);
+      if (version === generationVersion.current) {
+        setAnalysis((prev) => prev ? { ...prev, [key]: fresh } : prev);
+      }
     },
     [businessInput]
   );
 
   const resetAll = useCallback(() => {
+    generationVersion.current += 1;
     setBusinessInputState(EMPTY_BUSINESS_INPUT);
     setAnalysis(null);
     setAnalysisError(null);
