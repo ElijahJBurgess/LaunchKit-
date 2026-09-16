@@ -1,10 +1,10 @@
 .landing{ min-height:100vh; background:#fbfcfa; color:#081019; }
-.landing-nav{ height:82px; padding:0 clamp(1.4rem,8vw,8.25rem); display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.94); border-bottom:1px solid #e9ece8; position:relative; z-index:5; }
+.landing-nav{ height:82px; padding:0 clamp(1.4rem,8vw,8.25rem); display:flex; align-items:center; background:rgba(255,255,255,.94); border-bottom:1px solid #e9ece8; position:relative; z-index:5; }
 .landing-logo{ display:block; width:188px; height:auto; }
-.landing-nav-cta,.landing-primary,.landing-secondary{ min-height:52px; border-radius:9px; padding:0 1.7rem; font:700 .95rem/1 var(--font-sans); cursor:pointer; transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease; }
-.landing-nav-cta,.landing-primary{ border:1px solid #176631; color:#fff; background:linear-gradient(135deg,#176c35,#0c5126); box-shadow:0 8px 22px rgba(18,94,45,.16); }
-.landing-nav-cta span,.landing-primary span{ margin-left:.45rem; font-size:1.15em; }
-.landing-nav-cta:hover,.landing-primary:hover{ transform:translateY(-1px); background:linear-gradient(135deg,#1b783c,#0e5c2b); box-shadow:0 12px 26px rgba(18,94,45,.22); }
+.landing-primary,.landing-secondary{ min-height:52px; border-radius:9px; padding:0 1.7rem; font:700 .95rem/1 var(--font-sans); cursor:pointer; transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease; }
+.landing-primary{ border:1px solid #176631; color:#fff; background:linear-gradient(135deg,#176c35,#0c5126); box-shadow:0 8px 22px rgba(18,94,45,.16); }
+.landing-primary span{ margin-left:.45rem; font-size:1.15em; }
+.landing-primary:hover{ transform:translateY(-1px); background:linear-gradient(135deg,#1b783c,#0e5c2b); box-shadow:0 12px 26px rgba(18,94,45,.22); }
 .landing-hero{ min-height:calc(100vh - 82px); display:grid; place-items:center; padding:clamp(4.25rem,8vh,7rem) 1.5rem 3rem; position:relative; overflow:hidden; background:radial-gradient(circle at 50% 42%,#fff 0,#fff 32%,rgba(249,252,248,.88) 68%,#f5faf4 100%); }
 .landing-inner{ width:min(920px,100%); text-align:center; position:relative; z-index:2; }
 .intake-kicker{ display:inline-block; margin-bottom:1.85rem; color:#1c713b; font-size:.72rem; font-weight:800; letter-spacing:.28em; text-transform:uppercase; }
@@ -30,11 +30,11 @@
 .landing button:focus-visible{ outline:3px solid rgba(30,117,59,.35); outline-offset:4px; }
 
 @media(max-width:760px){
-  .landing-nav{ height:72px; padding:0 1.2rem; }.landing-logo{ width:156px; }.landing-nav-cta{ min-height:44px; padding:0 1rem; font-size:.82rem; }
+  .landing-nav{ height:72px; padding:0 1.2rem; }.landing-logo{ width:156px; }
   .landing-hero{ min-height:calc(100vh - 72px); padding:3.7rem 1.2rem 2.5rem; align-items:start; }.landing-title{ font-size:clamp(2.7rem,12vw,4rem); line-height:1.02; }.landing-title br{ display:none; }.intake-kicker{ font-size:.62rem; letter-spacing:.2em; margin-bottom:1.4rem; }
   .landing-sub{ font-size:1rem; }.landing-actions{ flex-direction:column; align-items:stretch; max-width:420px; margin:0 auto 2rem; }.landing-actions button{ width:100%; min-width:0; }
   .trust-row{ flex-direction:column; align-items:flex-start; width:max-content; gap:.65rem; }.trust-row span{ padding:0; }.trust-row span+span{ border-left:0; }.landing-credit{ margin-top:2rem; }
   .landing-orbit-top{ left:-390px; }.landing-orbit-bottom{ right:-390px; }.landing-dots-right{ right:-55px; }.landing-dots-left{ left:-55px; }
 }
-@media(max-width:390px){ .landing-logo{ width:142px; }.landing-nav-cta{ padding:0 .8rem; }.landing-title{ font-size:2.65rem; }.landing-sub{ line-height:1.45; }.landing-credit span{ width:26px; } }
-@media(prefers-reduced-motion:reduce){ .landing-nav-cta,.landing-primary,.landing-secondary{ transition:none; } }
+@media(max-width:390px){ .landing-logo{ width:142px; }.landing-title{ font-size:2.65rem; }.landing-sub{ line-height:1.45; }.landing-credit span{ width:26px; } }
+@media(prefers-reduced-motion:reduce){ .landing-primary,.landing-secondary{ transition:none; } }

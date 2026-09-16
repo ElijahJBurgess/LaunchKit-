@@ -17,7 +17,6 @@ export function Landing() {
     <div className="landing">
       <header className="landing-nav fade-in">
         <img className="landing-logo" src={launchKitLogo} alt="LaunchKit" />
-        <button className="landing-nav-cta" onClick={() => navigate('/onboarding')}>Get started <span>→</span></button>
       </header>
 
       <main className="landing-hero">
