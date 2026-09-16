@@ -14,9 +14,16 @@ export function Positioning() {
         <RegenerateButton onRegenerate={() => regenerateSection('positioning')} />
       </div>
 
-      <div className="big-idea">{p.statement}</div>
+      <div className="positioning-frame">
+        <div className="positioning-context"><span>For</span><strong>{analysis.icp.primary.name}</strong></div>
+        <div className="positioning-context"><span>Who need</span><strong>{analysis.icp.primary.painPoints[0]}</strong></div>
+        <article className="positioning-anchor"><span>Recommended position</span><h3>{p.statement}</h3></article>
+        <div className="positioning-because"><span>Because</span><strong>{p.differentiation[0]}</strong></div>
+      </div>
 
-      <div className="section-block">
+      <details className="strategy-reasoning section-block">
+        <summary>View full positioning rationale</summary>
+        <div className="positioning-detail">
         <h3>Value proposition &amp; elevator pitch</h3>
         <div className="card" style={{ marginBottom: '0.7rem' }}>
           <div className="card-row-head">
@@ -32,9 +39,9 @@ export function Positioning() {
           </div>
           {p.elevatorPitch}
         </div>
-      </div>
+        </div>
 
-      <div className="section-block">
+      <div className="positioning-detail">
         <h3>Category &amp; why now</h3>
         <div className="exec-grid">
           <div className="exec-tile">
@@ -48,14 +55,14 @@ export function Positioning() {
         </div>
       </div>
 
-      <div className="section-block">
+      <div className="positioning-detail">
         <h3>Differentiation</h3>
         <ul className="opp-list">
           {p.differentiation.map((d, i) => (
             <li key={i}>{d}</li>
           ))}
         </ul>
-      </div>
+      </div></details>
     </div>
   );
 }

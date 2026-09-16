@@ -39,16 +39,6 @@ export function Messaging() {
         <div className="messaging-arrow">↓</div>
 
         <div className="messaging-tier">
-          <div className="messaging-tier-label">Proof points</div>
-          <ul className="plain">
-            {messaging.proofPoints.map((p, i) => (
-              <li key={i}>{p}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="messaging-arrow">↓</div>
-
-        <div className="messaging-tier">
           <div className="messaging-tier-label">Feature → Benefit → Outcome</div>
           <div className="fbo-list">
             {messaging.featureBenefits.map((fb, i) => (

@@ -11,6 +11,7 @@ import { Competition } from './tabs/Competition';
 import { Launch } from './tabs/Launch';
 import { Content } from './tabs/Content';
 import { Sales } from './tabs/Sales';
+import { Visuals } from './tabs/Visuals';
 import './Workspace.css';
 import './tabs/tabs.css';
 
@@ -23,6 +24,7 @@ const TAB_COMPONENTS: Record<WorkspaceTab, ComponentType> = {
   launch: Launch,
   content: Content,
   sales: Sales,
+  visuals: Visuals,
 };
 
 export function Workspace() {

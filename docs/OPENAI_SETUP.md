@@ -16,6 +16,7 @@ LaunchKit uses the OpenAI Responses API. The default model is `gpt-5-mini`; chan
    VITE_USE_MOCK_AI=false
    OPENAI_API_KEY=your-key-goes-here
    OPENAI_MODEL=gpt-5-mini
+   OPENAI_IMAGE_MODEL=gpt-image-2
    ```
 
    Keep the key server-side. Never prefix it with `VITE_`, paste it into application source, or commit `.env`.
@@ -27,7 +28,7 @@ LaunchKit uses the OpenAI Responses API. The default model is `gpt-5-mini`; chan
    npm run server
    ```
 
-5. Open `http://127.0.0.1:3000`, fill in the business form, and generate a strategy. Generating and regenerating in live mode makes paid API requests. Regeneration requests only the selected section.
+5. Open `http://127.0.0.1:3000`, fill in the business form, and generate a strategy. Generating and regenerating in live mode makes paid API requests. Regeneration requests only the selected section. The Visuals tab creates images only when you click a Generate or Regenerate button; each click makes one additional paid image request.
 
 For development, run `npm run server` in one terminal and `npm run dev` in another. Vite proxies `/api` to the backend on port 3000. `npm run preview` alone does not provide the API backend.
 
@@ -37,7 +38,7 @@ Vite embeds `VITE_USE_MOCK_AI` at build time. After changing it, restart both pr
 
 Missing keys, invalid keys, usage/rate limits, invalid responses, and timeouts produce visible errors. Live failures do not silently fall back to mock data. Requests have a two-minute backend timeout and a 16,000 output-token ceiling; incomplete output is rejected. The API returns only validated strategy data, not raw provider error details.
 
-Strategies use the submitted business details, without browsing websites. Scores are estimates; unverified claims and suggested proof points should be reviewed before use.
+Strategies use the submitted business details, without browsing websites. Scores are estimates, and unverified claims should be reviewed before use.
 
 The server binds to localhost by default. This setup is for local use; add user authentication and per-user usage controls before exposing the paid generation route publicly. No deployment is configured by this change.
 
@@ -45,4 +46,4 @@ The server binds to localhost by default. This setup is for local use; add user 
 
 `npm test` covers the provider contract and both frontend modes using simulated HTTP responses. It makes no paid API calls. `npm run build` checks TypeScript and builds the app. A real account/key smoke test remains necessary when you activate billing.
 
-References: [Responses API](https://developers.openai.com/api/reference/typescript/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-5 mini](https://developers.openai.com/api/docs/models/gpt-5-mini).
+References: [Responses API](https://developers.openai.com/api/reference/typescript/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [GPT-5 mini](https://developers.openai.com/api/docs/models/gpt-5-mini), [Image generation](https://developers.openai.com/api/docs/guides/image-generation).

@@ -14,7 +14,17 @@ export function Sales() {
         <RegenerateButton onRegenerate={() => regenerateSection('sales')} />
       </div>
 
-      <div className="section-block">
+      <div className="sales-motion" aria-label="Sales motion">
+        {[
+          ['Target', analysis.icp.primary.name],
+          ['Open', sales.discoveryQuestions[0]],
+          ['Value', analysis.positioning.valueProposition],
+          ['Reason', analysis.positioning.differentiation[0]],
+          ['CTA', sales.pitch],
+        ].map(([label, text], index) => <div className="sales-step" key={label}><span>{label}</span><strong>{text}</strong>{index < 4 && <i aria-hidden="true">→</i>}</div>)}
+      </div>
+
+      <details className="strategy-reasoning sales-details"><summary>View sales scripts and handling</summary><div className="sales-detail-body"><div className="section-block">
         <h3>Sales one-pager</h3>
         <div className="card">
           <div className="card-row-head">
@@ -66,7 +76,7 @@ export function Sales() {
           </div>
           {sales.pitch}
         </div>
-      </div>
+      </div></div></details>
     </div>
   );
 }

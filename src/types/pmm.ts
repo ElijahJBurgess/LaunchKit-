@@ -71,7 +71,6 @@ export interface PMMAnalysis {
     hero: string;
     supportingMessages: string[];
     pillars: string[];
-    proofPoints: string[];
     featureBenefits: FeatureBenefit[];
   };
 
@@ -136,6 +135,7 @@ export const WORKSPACE_TABS = [
   'launch',
   'content',
   'sales',
+  'visuals',
 ] as const;
 
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
@@ -149,4 +149,5 @@ export const WORKSPACE_TAB_LABELS: Record<WorkspaceTab, string> = {
   launch: 'Launch',
   content: 'Content',
   sales: 'Sales',
+  visuals: 'Visuals',
 };

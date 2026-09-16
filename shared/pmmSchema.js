@@ -13,7 +13,7 @@ export const analysisSchema = object({
   recommendations: object(texts('topOpportunity', 'biggestRisk', 'nextMove')),
   icp: object({ primary: icp, secondary: icp }),
   positioning: object({ ...texts('statement', 'valueProposition', 'elevatorPitch', 'category', 'whyNow'), differentiation: list }),
-  messaging: object({ hero: text, ...lists('supportingMessages', 'pillars', 'proofPoints'), featureBenefits: array(object(texts('feature', 'benefit', 'outcome'))) }),
+  messaging: object({ hero: text, ...lists('supportingMessages', 'pillars'), featureBenefits: array(object(texts('feature', 'benefit', 'outcome'))) }),
   competition: object({ competitors: array(object(texts('name', 'strength', 'weakness', 'opportunity'))), takeaway: text, swot: object(lists('strengths', 'weaknesses', 'opportunities', 'threats')) }),
   launch: object({ preLaunch: phase, launch: phase, postLaunch: phase, primaryKPI: text, ...lists('secondaryKPIs', 'checklist') }),
   content: object(texts('landingPage', 'launchEmail', 'linkedin', 'paidSocial', 'googleAd', 'pressRelease', 'productHunt')),

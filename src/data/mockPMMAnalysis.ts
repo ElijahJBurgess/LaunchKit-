@@ -169,11 +169,6 @@ export function generateMockAnalysis(input: BusinessInput): PMMAnalysis {
         `Built for ${audience.split(',')[0]?.trim() || 'your team'}, not retrofitted from an enterprise suite.`,
       ],
       pillars: [`Purpose-built, not general-purpose`, `Fast time-to-value`, `Honest, transparent pricing`],
-      proofPoints: [
-        `Solves the exact problem this audience describes, not an adjacent one`,
-        `Live in minutes with no migration project`,
-        differentiation ? differentiation : `Priced for the team that actually needs it, not padded for enterprise budgets`,
-      ],
       featureBenefits: [
         {
           feature: firstSentence(description).replace(/\.$/, '') || `${name}'s core workflow`,

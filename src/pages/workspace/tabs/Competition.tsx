@@ -13,15 +13,16 @@ export function Competition() {
         <RegenerateButton onRegenerate={() => regenerateSection('competition')} />
       </div>
 
+      <div className="competition-takeaway"><span className="section-eyebrow">Recommended alternative</span><h3>{competition.takeaway}</h3></div>
       <div className="section-block">
-        <h3>Competitive matrix</h3>
+        <h3>Them → gap → your opportunity</h3>
         <table className="matrix">
           <thead>
             <tr>
-              <th>Competitor</th>
+              <th>Them</th>
               <th>Strength</th>
-              <th>Weakness</th>
-              <th>Our opportunity</th>
+              <th>Gap</th>
+              <th>You</th>
             </tr>
           </thead>
           <tbody>
@@ -37,13 +38,10 @@ export function Competition() {
             ))}
           </tbody>
         </table>
-        <div className="card">
-          <strong>Competitive takeaway:</strong> {competition.takeaway}
-        </div>
       </div>
 
-      <div className="section-block">
-        <h3>SWOT</h3>
+      <details className="strategy-reasoning section-block">
+        <summary>View supporting SWOT</summary>
         <div className="swot-grid">
           <div className="swot-tile s">
             <h4>Strengths</h4>
@@ -78,7 +76,7 @@ export function Competition() {
             </ul>
           </div>
         </div>
-      </div>
+      </details>
     </div>
   );
 }

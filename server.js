@@ -3,11 +3,13 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import generateHandler from './api/generate.js';
+import generateVisualHandler from './api/generate-visual.js';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: '128kb' }));
 app.all('/api/generate', generateHandler);
+app.all('/api/generate-visual', generateVisualHandler);
 app.use(express.static(path.join(directory, 'dist')));
 app.get('*', (_req, res) => res.sendFile(path.join(directory, 'dist', 'index.html')));
 app.use((error, _req, res, _next) => {

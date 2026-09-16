@@ -1,72 +1,38 @@
+import { useMemo } from 'react';
 import { useAppState } from '../../../state/AppState';
-import { ScoreBar } from '../../../components/ScoreBar';
-
-function scoreBadge(overall: number): { label: string; color: string; bg: string } {
-  if (overall >= 80) return { label: 'Launch Ready', color: 'var(--good)', bg: 'var(--good-bg)' };
-  if (overall >= 60) return { label: 'Needs Work', color: 'var(--warn)', bg: 'var(--warn-bg)' };
-  return { label: 'Not Ready', color: 'var(--bad)', bg: 'var(--bad-bg)' };
-}
+import { buildVisualPlan } from '../../../lib/visualPlan';
+import { GtmBlueprint } from '../components/GtmBlueprint';
+import { PriorityActions } from '../components/PriorityActions';
+import { MetricFocus } from '../components/MetricFocus';
 
 export function Overview() {
   const { analysis } = useAppState();
-  if (!analysis) return null;
-  const { score, recommendations, company } = analysis;
-  const badge = scoreBadge(score.overall);
-
+  const plan = useMemo(() => analysis ? buildVisualPlan(analysis) : null, [analysis]);
+  if (!analysis || !plan) return null;
   return (
-    <div className="panel fade-in">
-      <div className="score-card">
-        <div className="score-top">
-          <span className="score-label">Product Marketing Score</span>
-          <span className="score-badge" style={{ color: badge.color, background: badge.bg }}>
-            {badge.label}
-          </span>
+    <div className="overview-page fade-in">
+      <header className="strategy-hero">
+        <div className="strategy-hero-copy">
+          <span className="section-eyebrow">The strategy</span>
+          <h2>{plan.headline}</h2>
+          <p>{analysis.company.summary}</p>
         </div>
-        <div className="score-number">
-          {score.overall}
-          <span> / 100</span>
+        <div className="strategy-score" aria-label={`Launch readiness score ${analysis.score.overall} out of 100`}>
+          <span>Readiness</span><strong>{analysis.score.overall}</strong><small>/100</small>
+          <div><i style={{ width: `${analysis.score.overall}%` }} /></div>
         </div>
-        <div className="score-bar-track" style={{ marginTop: '0.7rem' }}>
-          <div className="score-bar-fill" style={{ width: `${score.overall}%` }} />
+      </header>
+      <GtmBlueprint plan={plan} />
+      <PriorityActions actions={plan.actions} />
+      <MetricFocus metrics={plan.metrics} />
+      <details className="strategy-reasoning">
+        <summary>View the reasoning behind this direction</summary>
+        <div className="reasoning-grid">
+          <article><span>Opportunity</span><p>{analysis.recommendations.topOpportunity}</p></article>
+          <article><span>Risk</span><p>{analysis.recommendations.biggestRisk}</p></article>
+          <article><span>Next move</span><p>{analysis.recommendations.nextMove}</p></article>
         </div>
-        <div className="subscore-grid">
-          <ScoreBar label="Market fit" value={score.marketFit} />
-          <ScoreBar label="Messaging" value={score.messaging} />
-          <ScoreBar label="Differentiation" value={score.differentiation} />
-          <ScoreBar label="ICP" value={score.icp} />
-          <ScoreBar label="Launch readiness" value={score.launchReadiness} />
-          <ScoreBar label="Positioning" value={score.positioning} />
-        </div>
-      </div>
-
-      <div className="section-block">
-        <h3>Executive Summary</h3>
-        <p className="exec-summary">{company.summary}</p>
-      </div>
-
-      <div className="callout-stack">
-        <div className="callout">
-          <span className="callout-icon">💡</span>
-          <div>
-            <div className="callout-k">Top opportunity</div>
-            <div className="callout-txt">{recommendations.topOpportunity}</div>
-          </div>
-        </div>
-        <div className="callout">
-          <span className="callout-icon">⚠️</span>
-          <div>
-            <div className="callout-k">Biggest risk</div>
-            <div className="callout-txt">{recommendations.biggestRisk}</div>
-          </div>
-        </div>
-        <div className="callout">
-          <span className="callout-icon">🎯</span>
-          <div>
-            <div className="callout-k">Recommended next move</div>
-            <div className="callout-txt">{recommendations.nextMove}</div>
-          </div>
-        </div>
-      </div>
+      </details>
     </div>
   );
 }
