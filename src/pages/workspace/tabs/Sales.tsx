@@ -6,77 +6,89 @@ export function Sales() {
   const { analysis, regenerateSection } = useAppState();
   if (!analysis) return null;
   const { sales } = analysis;
+  const motion = [
+    ['Target', analysis.icp.primary.name],
+    ['Opening question', sales.discoveryQuestions[0]],
+    ['Value', analysis.positioning.valueProposition],
+    ['Reason to believe', analysis.positioning.differentiation[0]],
+    ['Call to action', sales.pitch],
+  ];
 
   return (
-    <div className="panel fade-in">
-      <div className="panel-head">
-        <h2>Sales</h2>
+    <div className="sales-page fade-in">
+      <div className="sales-page-head">
+        <div>
+          <span className="section-eyebrow">Conversation architecture</span>
+          <h2>Your sales motion</h2>
+          <p>Lead with the customer’s reality, connect it to the value, then make the next step obvious.</p>
+        </div>
         <RegenerateButton onRegenerate={() => regenerateSection('sales')} />
       </div>
 
       <div className="sales-motion" aria-label="Sales motion">
-        {[
-          ['Target', analysis.icp.primary.name],
-          ['Open', sales.discoveryQuestions[0]],
-          ['Value', analysis.positioning.valueProposition],
-          ['Reason', analysis.positioning.differentiation[0]],
-          ['CTA', sales.pitch],
-        ].map(([label, text], index) => <div className="sales-step" key={label}><span>{label}</span><strong>{text}</strong>{index < 4 && <i aria-hidden="true">→</i>}</div>)}
-      </div>
-
-      <details className="strategy-reasoning sales-details"><summary>View sales scripts and handling</summary><div className="sales-detail-body"><div className="section-block">
-        <h3>Sales one-pager</h3>
-        <div className="card">
-          <div className="card-row-head">
-            <strong>One-pager</strong>
-            <CopyButton text={sales.onePager} />
-          </div>
-          {sales.onePager}
-        </div>
-      </div>
-
-      <div className="section-block">
-        <h3>Competitive battlecard</h3>
-        <div className="card">
-          <div className="card-row-head">
-            <strong>Battlecard</strong>
-            <CopyButton text={sales.battlecard} />
-          </div>
-          <div className="asset-body">{sales.battlecard}</div>
-        </div>
-      </div>
-
-      <div className="section-block">
-        <h3>Objections &amp; handling</h3>
-        {sales.objections.map((obj, i) => (
-          <div className="card" key={i} style={{ marginBottom: '0.6rem' }}>
-            <div className="card-title" style={{ color: 'var(--bad)' }}>
-              {obj}
-            </div>
-            <div>{sales.objectionHandling[i]}</div>
-          </div>
+        {motion.map(([label, text], index) => (
+          <article className={`sales-step sales-step-${index + 1}`} key={label}>
+            <div className="sales-step-number">0{index + 1}</div>
+            <div><span>{label}</span><strong>{text}</strong></div>
+            {index < motion.length - 1 && <i aria-hidden="true">↓</i>}
+          </article>
         ))}
       </div>
 
-      <div className="section-block">
-        <h3>Discovery questions</h3>
-        <ul className="opp-list">
-          {sales.discoveryQuestions.map((q, i) => (
-            <li key={i}>{q}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="section-block">
-        <h3>Sales pitch</h3>
-        <div className="card">
-          <div className="card-row-head">
-            <strong>Pitch</strong>
-            <CopyButton text={sales.pitch} />
-          </div>
-          {sales.pitch}
+      <section className="sales-field-guide" aria-labelledby="sales-field-guide-title">
+        <div className="sales-section-title">
+          <span className="section-eyebrow">In the conversation</span>
+          <h2 id="sales-field-guide-title">Your field guide</h2>
         </div>
-      </div></div></details>
+        <div className="sales-guide-grid">
+          <article className="sales-guide-panel">
+            <h3>Discovery questions</h3>
+            <ol className="sales-question-list">
+              {sales.discoveryQuestions.map((question, index) => (
+                <li key={question}><span>0{index + 1}</span>{question}</li>
+              ))}
+            </ol>
+          </article>
+          <article className="sales-guide-panel sales-objection-panel">
+            <h3>Objections and responses</h3>
+            <div className="sales-objection-list">
+              {sales.objections.map((objection, index) => (
+                <details key={objection} open={index === 0}>
+                  <summary>{objection}</summary>
+                  <p>{sales.objectionHandling[index]}</p>
+                </details>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <details className="strategy-reasoning sales-details">
+        <summary>Open the complete sales toolkit</summary>
+        <div className="sales-detail-body">
+          <div className="section-block">
+            <h3>Sales one-pager</h3>
+            <div className="card">
+              <div className="card-row-head"><strong>One-pager</strong><CopyButton text={sales.onePager} /></div>
+              {sales.onePager}
+            </div>
+          </div>
+          <div className="section-block">
+            <h3>Competitive battlecard</h3>
+            <div className="card">
+              <div className="card-row-head"><strong>Battlecard</strong><CopyButton text={sales.battlecard} /></div>
+              <div className="asset-body">{sales.battlecard}</div>
+            </div>
+          </div>
+          <div className="section-block">
+            <h3>Sales pitch</h3>
+            <div className="card">
+              <div className="card-row-head"><strong>Pitch</strong><CopyButton text={sales.pitch} /></div>
+              {sales.pitch}
+            </div>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
